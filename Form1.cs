@@ -301,7 +301,7 @@ namespace Games
                     RotatePiece();
                     break;
                 case Keys.Space:
-                    HardDrop();
+                    RotatePiece();
                     break;
                 case Keys.P:
                     TogglePause();
@@ -423,7 +423,7 @@ namespace Games
             DrawNextPiecePreview(g, panelX, TopPadding + 168);
 
             g.DrawString("操作說明:", normalFont, textBrush, panelX, TopPadding + 320);
-            g.DrawString("←/→ 或 A/D：左右移動\n↑ 或 W：旋轉\n↓ 或 S：加速下落\nSpace：瞬間落下\nP：暫停", normalFont, textBrush, panelX, TopPadding + 348);
+            g.DrawString("←/→ 或 A/D：左右移動\n↑ / W / Space：旋轉\n↓ 或 S：加速下落\nP：暫停", normalFont, textBrush, panelX, TopPadding + 348);
         }
 
         private void DrawNextPiecePreview(Graphics g, int x, int y)
