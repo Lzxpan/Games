@@ -10,6 +10,8 @@ namespace Games
         private const int SidePanelWidth = 220;
         private const int TopPadding = 16;
         private const int LeftPadding = 16;
+        private const int ShakeDurationFrames = 6;
+        private const int ShakeAmplitude = 5;
 
         private readonly int[,] board = new int[BoardHeight, BoardWidth];
         private readonly Color[] pieceColors =
@@ -37,6 +39,7 @@ namespace Games
 
         private readonly Random random = new();
         private readonly System.Windows.Forms.Timer gameTimer = new();
+        private readonly System.Windows.Forms.Timer shakeTimer = new();
 
         private FallingPiece currentPiece = null!;
         private FallingPiece nextPiece = null!;
@@ -45,6 +48,8 @@ namespace Games
         private int linesCleared;
         private int level = 1;
         private bool isGameOver;
+        private int shakeFramesRemaining;
+        private Point shakeOffset = Point.Empty;
 
         public Form1()
         {
@@ -58,6 +63,8 @@ namespace Games
             DoubleBuffered = true;
 
             gameTimer.Tick += (_, _) => GameTick();
+            shakeTimer.Interval = 16;
+            shakeTimer.Tick += ShakeTimer_Tick;
             KeyDown += Form1_KeyDown;
 
             StartNewGame();
@@ -70,6 +77,9 @@ namespace Games
             linesCleared = 0;
             level = 1;
             isGameOver = false;
+            shakeFramesRemaining = 0;
+            shakeOffset = Point.Empty;
+            shakeTimer.Stop();
 
             nextPiece = CreateRandomPiece();
             SpawnNewPiece();
@@ -166,6 +176,8 @@ namespace Games
 
         private void LockPiece()
         {
+            bool touchedBottom = IsPieceTouchingBottom();
+
             foreach (Point block in currentPiece.Blocks)
             {
                 int x = currentPiece.Position.X + block.X;
@@ -198,6 +210,66 @@ namespace Games
             }
 
             SpawnNewPiece();
+
+            if (touchedBottom)
+            {
+                StartLandingShake();
+            }
+        }
+
+        private bool IsPieceTouchingBottom()
+        {
+            foreach (Point block in currentPiece.Blocks)
+            {
+                int y = currentPiece.Position.Y + block.Y;
+                if (y == BoardHeight - 1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void StartLandingShake()
+        {
+            shakeFramesRemaining = ShakeDurationFrames;
+            shakeOffset = new Point(
+                random.Next(-ShakeAmplitude, ShakeAmplitude + 1),
+                random.Next(-ShakeAmplitude, ShakeAmplitude + 1));
+
+            if (!shakeTimer.Enabled)
+            {
+                shakeTimer.Start();
+            }
+
+            Invalidate();
+        }
+
+        private void ShakeTimer_Tick(object? sender, EventArgs e)
+        {
+            if (shakeFramesRemaining <= 0)
+            {
+                shakeOffset = Point.Empty;
+                shakeTimer.Stop();
+                Invalidate();
+                return;
+            }
+
+            shakeFramesRemaining--;
+            if (shakeFramesRemaining == 0)
+            {
+                shakeOffset = Point.Empty;
+                shakeTimer.Stop();
+            }
+            else
+            {
+                shakeOffset = new Point(
+                    random.Next(-ShakeAmplitude, ShakeAmplitude + 1),
+                    random.Next(-ShakeAmplitude, ShakeAmplitude + 1));
+            }
+
+            Invalidate();
         }
 
         private int ClearLines()
@@ -327,6 +399,11 @@ namespace Games
             base.OnPaint(e);
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            if (shakeOffset != Point.Empty)
+            {
+                g.TranslateTransform(shakeOffset.X, shakeOffset.Y);
+            }
 
             DrawBoard(g);
             DrawCurrentPiece(g);
