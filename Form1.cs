@@ -176,7 +176,7 @@ namespace Games
 
         private void LockPiece()
         {
-            bool touchedBottom = IsPieceTouchingBottom();
+            StartLandingShake();
 
             foreach (Point block in currentPiece.Blocks)
             {
@@ -210,25 +210,6 @@ namespace Games
             }
 
             SpawnNewPiece();
-
-            if (touchedBottom)
-            {
-                StartLandingShake();
-            }
-        }
-
-        private bool IsPieceTouchingBottom()
-        {
-            foreach (Point block in currentPiece.Blocks)
-            {
-                int y = currentPiece.Position.Y + block.Y;
-                if (y == BoardHeight - 1)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private void StartLandingShake()

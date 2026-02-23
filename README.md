@@ -34,7 +34,7 @@
    - 固定方塊與目前下落方塊。
    - 右側資訊面板（分數、消行、等級、下一個方塊、操作說明）。
    - 暫停與 Game Over 半透明遮罩提示。
-   - 方塊觸底鎖定時的短暫畫面震動效果。
+   - 方塊鎖定時（落到底部或壓到其他方塊）的短暫畫面震動效果。
 
 ---
 
@@ -168,15 +168,15 @@
 #### `LockPiece()`
 **功能：** 將目前方塊寫入棋盤，處理消行、分數與等級，再出新方塊。  
 **流程：**
-1. 走訪 `currentPiece.Blocks` 寫入 `board[y,x] = type`。
-2. 呼叫 `ClearLines()` 取得本次消除行數。
-3. 若有消行：
+1. 鎖定當下立即觸發 `StartLandingShake()`（無論是碰到底部或堆疊在其他方塊上）。
+2. 走訪 `currentPiece.Blocks` 寫入 `board[y,x] = type`。
+3. 呼叫 `ClearLines()` 取得本次消除行數。
+4. 若有消行：
    - 累加 `linesCleared`。
    - 依 1/2/3/4 行給分（100/300/500/800 × level）。
    - 依總消行數計算新等級（每 10 行 +1）。
    - 若升級，呼叫 `UpdateSpeed()`。
-4. 呼叫 `SpawnNewPiece()`。
-5. 若該方塊在鎖定前已觸底，觸發 `StartLandingShake()`。
+5. 呼叫 `SpawnNewPiece()`。
 
 #### `ClearLines()`
 **功能：** 清除滿行並讓上方資料下落。  
@@ -203,19 +203,12 @@
 1. 計算 `gameTimer.Interval = Max(80, 550 - (level - 1) * 45)`。
 2. 等級越高，間隔越短。
 
-#### `IsPieceTouchingBottom()`
-**功能：** 判斷目前方塊是否接觸棋盤最底列。  
-**流程：**
-1. 逐格檢查 `currentPiece` 的實際 Y 座標。
-2. 任一格 `y == BoardHeight - 1` 即回傳 `true`。
-3. 否則回傳 `false`。
-
 #### `StartLandingShake()`
-**功能：** 啟動落地震動畫面效果。  
+**功能：** 在方塊鎖定當下立即啟動震動畫面效果。  
 **流程：**
 1. 設定震動剩餘幀數與初始偏移。
 2. 啟動 `shakeTimer`（若尚未啟動）。
-3. 呼叫 `Invalidate()` 立即重繪。
+3. 呼叫 `Invalidate()` 讓當前幀立刻重繪並出現震動。
 
 #### `ShakeTimer_Tick(object? sender, EventArgs e)`
 **功能：** 逐幀更新震動偏移，時間到後停止震動。  
