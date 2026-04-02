@@ -1,0 +1,19 @@
+block-land.wav source and license
+
+Final file:
+- Assets/Sounds/block-land.wav
+
+Source page:
+- Freesound: https://freesound.org/people/Hankof/sounds/655621/
+- Title: brick falling on floor.wav
+- Author: Hankof
+- License: Creative Commons 0 (CC0)
+- License text: https://creativecommons.org/publicdomain/zero/1.0/
+
+Implementation note:
+- The original Freesound asset page exposes the sound as Wave (.wav), but direct WAV download requires login.
+- This repository's block-land.wav was converted locally from the publicly accessible HQ MP3 preview stream for the same CC0 sound:
+  https://cdn.freesound.org/previews/655/655621_13805813-hq.mp3
+
+Reference source considered during planning:
+- Freesound backup option: https://freesound.org/people/dichardson/sounds/570964/

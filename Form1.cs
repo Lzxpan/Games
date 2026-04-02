@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using System.Media;
 
 namespace Games
 {
@@ -12,6 +13,7 @@ namespace Games
         private const int LeftPadding = 16;
         private const int ShakeDurationFrames = 6;
         private const int ShakeAmplitude = 5;
+        private static readonly string LandingSoundPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds", "block-land.wav");
 
         private readonly int[,] board = new int[BoardHeight, BoardWidth];
         private readonly Color[] pieceColors =
@@ -40,6 +42,7 @@ namespace Games
         private readonly Random random = new();
         private readonly System.Windows.Forms.Timer gameTimer = new();
         private readonly System.Windows.Forms.Timer shakeTimer = new();
+        private SoundPlayer? landingSoundPlayer;
 
         private FallingPiece currentPiece = null!;
         private FallingPiece nextPiece = null!;
@@ -67,6 +70,7 @@ namespace Games
             shakeTimer.Tick += ShakeTimer_Tick;
             KeyDown += Form1_KeyDown;
 
+            InitializeLandingSound();
             StartNewGame();
         }
 
@@ -177,6 +181,7 @@ namespace Games
         private void LockPiece()
         {
             StartLandingShake();
+            PlayLandingSound();
 
             foreach (Point block in currentPiece.Blocks)
             {
@@ -210,6 +215,42 @@ namespace Games
             }
 
             SpawnNewPiece();
+        }
+
+        private void InitializeLandingSound()
+        {
+            if (!File.Exists(LandingSoundPath))
+            {
+                landingSoundPlayer = null;
+                return;
+            }
+
+            try
+            {
+                landingSoundPlayer = new SoundPlayer(LandingSoundPath);
+                landingSoundPlayer.Load();
+            }
+            catch
+            {
+                landingSoundPlayer = null;
+            }
+        }
+
+        private void PlayLandingSound()
+        {
+            if (landingSoundPlayer is null)
+            {
+                return;
+            }
+
+            try
+            {
+                landingSoundPlayer.Play();
+            }
+            catch
+            {
+                // Ignore audio playback failures to keep gameplay uninterrupted.
+            }
         }
 
         private void StartLandingShake()
@@ -373,6 +414,12 @@ namespace Games
 
             gameTimer.Enabled = !gameTimer.Enabled;
             Invalidate();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            landingSoundPlayer?.Dispose();
+            base.OnFormClosed(e);
         }
 
         protected override void OnPaint(PaintEventArgs e)
