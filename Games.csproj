@@ -9,12 +9,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\Sounds\block-land.wav">
+    <Content Include="Assets\Sounds\bgm-loop.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\MA_SoundCreator_Balloon_Burst_1.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Sounds\universfield-new-notification-09-352705.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\Sounds\LICENSE.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.3.0" />
   </ItemGroup>
 
 </Project>

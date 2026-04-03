@@ -1,5 +1,4 @@
 using System.Drawing.Drawing2D;
-using System.Media;
 
 namespace Games
 {
@@ -13,7 +12,9 @@ namespace Games
         private const int LeftPadding = 16;
         private const int ShakeDurationFrames = 6;
         private const int ShakeAmplitude = 5;
-        private static readonly string LandingSoundPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds", "block-land.wav");
+        private static readonly string LandingSoundPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds", "MA_SoundCreator_Balloon_Burst_1.wav");
+        private static readonly string LineClearSoundPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds", "universfield-new-notification-09-352705.mp3");
+        private static readonly string BackgroundMusicPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds", "bgm-loop.wav");
 
         private readonly int[,] board = new int[BoardHeight, BoardWidth];
         private readonly Color[] pieceColors =
@@ -42,7 +43,7 @@ namespace Games
         private readonly Random random = new();
         private readonly System.Windows.Forms.Timer gameTimer = new();
         private readonly System.Windows.Forms.Timer shakeTimer = new();
-        private SoundPlayer? landingSoundPlayer;
+        private readonly AudioManager audioManager = new(LandingSoundPath, LineClearSoundPath, BackgroundMusicPath);
 
         private FallingPiece currentPiece = null!;
         private FallingPiece nextPiece = null!;
@@ -51,6 +52,7 @@ namespace Games
         private int linesCleared;
         private int level = 1;
         private bool isGameOver;
+        private bool hasTouchdownCuePlayed;
         private int shakeFramesRemaining;
         private Point shakeOffset = Point.Empty;
 
@@ -70,7 +72,6 @@ namespace Games
             shakeTimer.Tick += ShakeTimer_Tick;
             KeyDown += Form1_KeyDown;
 
-            InitializeLandingSound();
             StartNewGame();
         }
 
@@ -81,6 +82,7 @@ namespace Games
             linesCleared = 0;
             level = 1;
             isGameOver = false;
+            hasTouchdownCuePlayed = false;
             shakeFramesRemaining = 0;
             shakeOffset = Point.Empty;
             shakeTimer.Stop();
@@ -89,6 +91,7 @@ namespace Games
             SpawnNewPiece();
             UpdateSpeed();
             gameTimer.Start();
+            audioManager.StartBackgroundMusic();
             Invalidate();
         }
 
@@ -105,12 +108,17 @@ namespace Games
             currentPiece = nextPiece;
             currentPiece.Position = new Point(3, 0);
             nextPiece = CreateRandomPiece();
+            hasTouchdownCuePlayed = false;
 
             if (!CanPlace(currentPiece, currentPiece.Position, currentPiece.Blocks))
             {
                 isGameOver = true;
                 gameTimer.Stop();
+                audioManager.StopBackgroundMusic();
+                return;
             }
+
+            UpdateTouchdownState();
         }
 
         private void GameTick()
@@ -137,6 +145,7 @@ namespace Games
             }
 
             currentPiece.Position = target;
+            UpdateTouchdownState();
             return true;
         }
 
@@ -159,6 +168,7 @@ namespace Games
                 {
                     currentPiece.Blocks = rotated;
                     currentPiece.Position = testPos;
+                    UpdateTouchdownState();
                     Invalidate();
                     return;
                 }
@@ -180,9 +190,6 @@ namespace Games
 
         private void LockPiece()
         {
-            StartLandingShake();
-            PlayLandingSound();
-
             foreach (Point block in currentPiece.Blocks)
             {
                 int x = currentPiece.Position.X + block.X;
@@ -196,6 +203,7 @@ namespace Games
             int cleared = ClearLines();
             if (cleared > 0)
             {
+                audioManager.PlayLineClear();
                 linesCleared += cleared;
                 score += cleared switch
                 {
@@ -217,40 +225,38 @@ namespace Games
             SpawnNewPiece();
         }
 
-        private void InitializeLandingSound()
+        private void TriggerLandingImpact()
         {
-            if (!File.Exists(LandingSoundPath))
-            {
-                landingSoundPlayer = null;
-                return;
-            }
-
-            try
-            {
-                landingSoundPlayer = new SoundPlayer(LandingSoundPath);
-                landingSoundPlayer.Load();
-            }
-            catch
-            {
-                landingSoundPlayer = null;
-            }
+            audioManager.PlayLandingImpact();
+            StartLandingShake();
         }
 
-        private void PlayLandingSound()
+        private void UpdateTouchdownState()
         {
-            if (landingSoundPlayer is null)
+            if (isGameOver)
             {
                 return;
             }
 
-            try
+            bool isTouchingSurface = IsCurrentPieceTouchingSurface();
+            if (isTouchingSurface)
             {
-                landingSoundPlayer.Play();
+                if (!hasTouchdownCuePlayed)
+                {
+                    hasTouchdownCuePlayed = true;
+                    TriggerLandingImpact();
+                }
+
+                return;
             }
-            catch
-            {
-                // Ignore audio playback failures to keep gameplay uninterrupted.
-            }
+
+            hasTouchdownCuePlayed = false;
+        }
+
+        private bool IsCurrentPieceTouchingSurface()
+        {
+            Point below = new(currentPiece.Position.X, currentPiece.Position.Y + 1);
+            return !CanPlace(currentPiece, below, currentPiece.Blocks);
         }
 
         private void StartLandingShake()
@@ -413,12 +419,21 @@ namespace Games
             }
 
             gameTimer.Enabled = !gameTimer.Enabled;
+            if (gameTimer.Enabled)
+            {
+                audioManager.StartBackgroundMusic();
+            }
+            else
+            {
+                audioManager.StopBackgroundMusic();
+            }
+
             Invalidate();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            landingSoundPlayer?.Dispose();
+            audioManager.Dispose();
             base.OnFormClosed(e);
         }
 
